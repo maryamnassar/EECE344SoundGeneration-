@@ -21,14 +21,12 @@ void EnableInterrupts(void);  // Enable interrupts
 void WaitForInterrupt(void);
 
 int main(void){   
-		unsigned long Data; 
- PLL_Init();          // bus clock at 80 MHz
- // all initializations go here  
-	EnableInterrupts();
+	PLL_Init();          // bus clock at 80 MHz
 	DAC_Init();
 	Piano_Init(); 
-	//Sound_Init(); 
-	
+	Sound_Init(0); 
+	EnableInterrupts();
+
 	
   while(1){                
 
