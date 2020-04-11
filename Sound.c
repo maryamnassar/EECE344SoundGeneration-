@@ -1,36 +1,31 @@
-// Sound.c, 
-// This module contains the SysTick ISR that plays sound
-// Runs on LM4F120 or TM4C123
-// Program written by: put your names here
-// Date Created: 
-// Last Modified:  
-// Lab number: 5
-// Hardware connections
+// Lab4.c
+// Runs on TM4C123
+// Program written by: Maryam Nassar 
+// Date Created: March 27, 2020
+// Last Modified: April 10, 2020
+// Lab number: 4
+// Brief description of the program: This program will consist of 4 inputs and 6 outputs 
+// each of the 4 inputs will correspond to a piano note and their corresponding frequencies
+// the output will consist of a signal that has been converted from digital to analog
+//  
+// Hardware connections: 6 resistors, 4 switches, microcontroller, speaker, various jumper cables
 #include "tm4c123gh6pm.h"
 #include "dac.h"
 #include "piano.h" 
-
 // put code definitions for the software (actual C code)
 // this file explains how the module works
-int SinWaveSound[22] = {0x20,0x28,0x31,0x37,0x3c,0x3f,0x3f,0x3c,
-												0x37,0x31,0x28,0x20,0x17,0xe,0x8,0x3,
-												0x0,0x0,0x3,0x8,0xe,0x17};
-int Frequency[4] = {8263, 7360, 13878, 12368};
-volatile unsigned long WaveFrequency; 
+int SinWaveSound[64] = {32,35,38,41,44,46,49,51,
+												54,56,58,59,61,62,62,63,
+												63,63,62,62,61,59,58,56,
+												54,51,49,46,44,41,38,35,
+												32,28,25,22,19,17,14,12,
+												9,7,5,4,2,1,1,0,
+												0,0,1,1,2,4,5,7,
+												9,12,14,17,19,22,25,28};
 volatile unsigned long frequency; 
-								
+unsigned long Index = 0; 
 // Sin wave table for digital sound synthesis 
-//selected value of 80 points with a max amplitude of 63
-// the max value of 63 is based on the 6 bit binary weighted dac output limit we were given in the lab manual 
-// Add the sine wave data structure here
-
-volatile unsigned long Index; 
-// RELOAD VAL = [((Fbus in MHz)/((Fnote in Hz)(INDEX VAL))]-1 
-								
-								
-// from lab manual we know that Fwave = Fnote*80
-// we use 80 because it is the size of our table
-
+// RELOAD VAL = [((Fbus in MHz)/((Fnote in Hz)(INDEX VAL))]-1 					
 // **************Sound_Init*********************
 // Initialize Systick periodic interrupts
 // Input: Initial interrupt period
@@ -44,11 +39,10 @@ void Sound_Init(unsigned long period){
 		NVIC_ST_CTRL_R = 0; //Disable systick
 		NVIC_ST_RELOAD_R = period-1; //the reload value will be the period - 1 (subtract 1 bc we start count from 0) 
 		NVIC_ST_CURRENT_R = 0; //clear current register, this is the true reflection of the counter 
-		NVIC_SYS_PRI3_R = (NVIC_SYS_PRI3_R&0x00FFFFFF)|0x20000000; //set priotity
-		NVIC_ST_CTRL_R = 0x07; // enable again 
+		NVIC_ST_CTRL_R = 0x7; // enable again 
+		NVIC_EN0_R = 0x40000000; 
 		Index = 0;// refernce PG 215, init Index to 0 
 		frequency = 0; 
-		WaveFrequency = 0; 
 }
 
 // **************Sound_Play*********************
@@ -57,17 +51,21 @@ void Sound_Init(unsigned long period){
 //           Units to be determined by YOU
 //           Maximum to be determined by YOU
 //           Minimum to be determined by YOU
-//         input of zero disables sound output
+//           input of zero disables sound output
 // Output: none
 void Sound_Play(unsigned long frequency){
 	// using portE for DAC 
 		// directions are update the reload register with
 		// the recquired delay value for the note specified 
 		// clear the current register everytime we update the ReloadR
-		frequency = GPIO_PORTD_DATA_R; 
+
+	if (frequency == 0) {
+	NVIC_ST_CTRL_R = 0; 
+	} else {
 		NVIC_ST_RELOAD_R = frequency; 
-		//NVIC_ST_CURRENT_R = (frequency - 1) & 0x00FFFFFF; 
-		NVIC_ST_CURRENT_R = 0X00; 
+		NVIC_ST_CURRENT_R = 0;
+		NVIC_ST_CTRL_R = 0x07;
+			}
 	}
   
 // Interrupt service routine
@@ -76,16 +74,13 @@ void Sound_Play(unsigned long frequency){
 void SysTick_Handler(void){
 	//for sound output using periodic interrupts
 	// input if from DAC portE 
-	GPIO_PORTE_DATA_R ^= 0x0F; // toggle bits 0 - 3 
+				Index = (Index + 1)&0x3F; // cycle through values 
 				DAC_Out(SinWaveSound[Index]); //output 1 for each interrupt request
-				Index = (Index + 1);
-		if (Index > 21) {
-				Index = 0; 
-		}
-}
+		
+	}
 // Piano Keys Interrupt service routine
 // executed on both edges of switch input. 
 // add the edge triggered interrupt handler here.
-// 
+ 
 
 			
