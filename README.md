@@ -1,1 +1,1 @@
-# EECE344Lab4
+# EECE344SoundGeneration 
